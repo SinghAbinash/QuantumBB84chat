@@ -45,12 +45,8 @@ Behavior notes
 - The repository includes a lightweight BB84 metadata relay and analysis helpers (`qber_analysis.py`) so clients can
   perform QKD-style exchanges and log non-sensitive summary metrics (e.g., QBER) for diagnostics.
 
-Security notes
-- This is a prototype. For production you should:
-  - Use TLS (HTTPS / WSS) for all transport to protect signalling and pubkey exchange.
-  - Prefer ephemeral key agreement (e.g. X25519 / ECDH) for forward secrecy rather than long-lived RSA keys.
-  - Keep key material client-side where possible; avoid sending plaintext session keys to the server.
-  - Audit the client-side WebCrypto flows before relying on them in production.
+
+
 
 
 
