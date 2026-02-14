@@ -1,18 +1,26 @@
-# Quantum-Random AES Chat (prototype)
+# QSEC — Encrypted chat prototype
 
-This prototype demonstrates using IBM/Qiskit-generated randomness to create an AES-256 session key
-which is then securely shared to clients using RSA. After the session key is exchanged, clients send
-AES-encrypted messages via WebSockets.
+This prototype demonstrates an end-to-end encrypted chat where the server acts as a relay and room/metadata
+manager while clients handle key generation, key exchange, and message encryption.
+
+Key points:
+- The server (`server.py` + `chatcontainer.py`) manages rooms, forwards public keys and encrypted payloads,
+  relays BB84/QKD messages between peers, and stores structured metadata/logs.
+- Clients are responsible for generating session keys (or performing QKD via BB84), encrypting room keys for peers,
+  and decrypting messages locally. The server never decrypts client ciphertexts and does not persist plaintext keys.
 
 Contents:
-- `server.py` — Flask + SocketIO server (room management, quantum key generation, RSA-encrypted key delivery)
-- `quantum.py` — module that attempts to use IBM Quantum or Qiskit Aer, falls back to OS RNG
-- `crypto_utils.py` — helpers to encrypt room AES key (accepts browser SPKI public key b64) and AES-GCM helpers
-- `static/client.html` — browser demo using WebCrypto to generate RSA key pair and receive encrypted session key
-- `requirements.txt` — Python dependencies
+- `server.py` — Flask + SocketIO application that exposes the web UI and runs the Socket.IO server.
+- `chatcontainer.py` — Socket.IO handlers: room membership, pubkey announcements, relays for `roomkey_share`, `bb84_relay`,
+  encrypted message forwarding, and structured room logs.
+- `db.py` — SQLite-backed helpers to persist room logs, users, and optional room key blobs (used only for metadata/storage).
+- `qber_analysis.py` — helpers to analyze BB84/QBER related data (sampling, mismatch/QBER computation).
+- `static/` — client UI and JS (`client.html`, `room.html`, `room.js`) demonstrating the browser-side flows.
+- `tests/` — simple test tools and simulators (e.g. `sim_clients.py`).
+- `requirements.txt` — Python dependencies.
 
 Quickstart
-1. Create a Python virtualenv and install deps:
+1. Create a Python virtualenv and install dependencies (PowerShell):
 
 ```powershell
 python -m venv .venv
@@ -20,20 +28,28 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-2. (Optional) To use real IBM Quantum, set `IBM_QUANTUM_TOKEN` environment variable and install `qiskit-ibm-runtime`.
-
-3. Run the server:
+2. Run the server:
 
 ```powershell
 python server.py
 ```
 
-4. Open `http://localhost:5000/` in two browsers (or tabs). Join same room. The server will request quantum randomness,
-   derive a 256-bit AES key, and encrypt it with each client's RSA public key. Clients will decrypt the session key
-   locally and can send AES-encrypted messages.
+3. Open `http://localhost:5000/` (or open a room at `http://localhost:5000/room/<room_id>`) in two browsers or tabs.
+   Clients publish their public keys to the server and then perform client-to-client encrypted key exchange (or QKD)
+   via the provided Socket.IO messages. The server will relay encrypted room keys and encrypted messages but will not
+   decrypt or store key material.
+
+Behavior notes
+- The server logs structured events to the SQLite database in `data/qsec2.db` (room creation, joins, metadata about
+  encrypted messages and key relays). It intentionally avoids storing ciphertexts or secret key material.
+- The repository includes a lightweight BB84 metadata relay and analysis helpers (`qber_analysis.py`) so clients can
+  perform QKD-style exchanges and log non-sensitive summary metrics (e.g., QBER) for diagnostics.
 
 Security notes
 - This is a prototype. For production you should:
-  - Use TLS for all transport (WSS/HTTPS).
-  - Prefer ephemeral ECDH (X25519) for forward secrecy instead of long-lived RSA keys.
-  - Keep the server from storing plain session keys; consider performing key agreement client-to-client.
+  - Use TLS (HTTPS / WSS) for all transport to protect signalling and pubkey exchange.
+  - Prefer ephemeral key agreement (e.g. X25519 / ECDH) for forward secrecy rather than long-lived RSA keys.
+  - Keep key material client-side where possible; avoid sending plaintext session keys to the server.
+  - Audit the client-side WebCrypto flows before relying on them in production.
+
+If you'd like, I can also update `static/client.html` and `room.js` docs or add an example client script for easier testing.
