@@ -52,5 +52,6 @@ Security notes
   - Keep key material client-side where possible; avoid sending plaintext session keys to the server.
   - Audit the client-side WebCrypto flows before relying on them in production.
 
-If you'd like, I can also update `static/client.html` and `room.js` docs or add an example client script for easier testing.
+
+
 
