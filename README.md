@@ -1,4 +1,4 @@
-# QSEC — Encrypted chat prototype
+# QSEC — QuantumBB84chat 
 
 This prototype demonstrates an end-to-end encrypted chat where the server acts as a relay and room/metadata
 manager while clients handle key generation, key exchange, and message encryption.
@@ -53,3 +53,4 @@ Security notes
   - Audit the client-side WebCrypto flows before relying on them in production.
 
 If you'd like, I can also update `static/client.html` and `room.js` docs or add an example client script for easier testing.
+
