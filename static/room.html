@@ -1,0 +1,372 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Room</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+      <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+      :root {
+        /* Dark theme tuned for the teal/black background image */
+        --bg: #061417;
+        --ink: #e6f6f5;
+        --muted: #f3f9f9;
+        --surface: rgba(6,20,24,0.88);
+        --line: rgba(255,255,255,0.06);
+        --primary: #ff9a6b;
+        --primary-ink: #cf7151;
+        --primary-soft: rgba(255,154,107,0.08);
+        /* teal accent to match the background artwork */
+        --accent: #0fb3a6;
+        --accent-soft: rgba(15,179,166,0.08);
+        --warn: #ffb4a1;
+        --warn-soft: rgba(255,180,161,0.08);
+        --button-text: #ffffff;
+        --bg-hover: var(--primary-soft);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Chakra Petch", "Segoe UI", Tahoma, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(1200px 560px at -20% 0%, rgba(213,231,222,0.85) 0%, transparent 62%),
+          radial-gradient(1100px 620px at 110% -10%, rgba(220,232,245,0.75) 0%, transparent 60%),
+          url('/static/images/bg.jpg'),
+          var(--bg);
+        background-size: auto, auto, cover, auto;
+        background-position: center, center, center, 0 0;
+        background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+        display: grid;
+        place-items: center;
+        padding: 24px 14px;
+      }
+
+      /* Utility helpers to keep styling consistent across elements */
+      .btn-primary {
+        background-color: var(--primary);
+        border-color: var(--primary-ink);
+        color: var(--button-text);
+      }
+      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .btn-outline {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        color: var(--primary-ink);
+      }
+      .btn-outline:hover { background: var(--bg-hover); }
+
+      .btn-outline-small { background: var(--surface); border: 1px solid var(--line); color: var(--primary-ink); }
+
+      .status-pill {
+        border-color: rgba(12,92,85,0.12);
+        background: var(--primary-soft);
+        color: var(--primary-ink);
+      }
+
+      /* Ensure bordered rounded containers use the theme line color */
+      .rounded-2xl.border { border-color: var(--line) !important; }
+      /* Hide the top header when the app enters fullscreen */
+      body.in-fullscreen header { display: none !important; }
+
+      .fullscreen-btn {
+        background: transparent;
+        border: 1px solid var(--line);
+        padding: 6px;
+        border-radius: 8px;
+        color: var(--primary-ink);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fullscreen-btn:hover { background: var(--primary-soft); }
+      .rounded-lg.border { border-color: var(--line) !important; }
+
+      .chat-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 999px;
+      }
+
+      .chat-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-height: 0;
+        flex: 1 1 auto;
+      }
+
+      /* Theme-friendly form controls */
+      select#recipient,
+      select.theme-select {
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(6,20,24,0.12));
+        border: 1px solid var(--line);
+        color: var(--ink);
+        padding: 8px 10px;
+        border-radius: 10px;
+        min-width: 8rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23cfeee8' d='M5.23 7.21a.75.75 0 0 1 1.06-.02L10 10.77l3.71-3.58a.75.75 0 0 1 1.04 1.08l-4.25 4.11a.75.75 0 0 1-1.05 0L5.25 8.27a.75.75 0 0 1-.02-1.06z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 14px;
+      }
+      select#recipient option,
+      select.theme-select option { background: var(--surface); color: var(--ink); padding: 6px 8px; }
+      select.theme-select:focus { box-shadow: 0 0 0 4px var(--accent-soft); border-color: var(--accent); }
+
+      /* Custom select replacement (styled dropdown) */
+      .custom-select-container { position: relative; display: inline-block; }
+      .custom-select-container select.theme-select { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+      .custom-select-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(6,20,24,0.12));
+        border: 1px solid var(--line);
+        color: var(--ink);
+        padding: 8px 10px;
+        border-radius: 10px;
+        min-width: 8rem;
+        cursor: pointer;
+      }
+      .custom-select-display .caret { margin-left: auto; opacity: 0.9; }
+      .custom-select-list {
+        position: absolute;
+        left: 0;
+        top: calc(100% + 8px);
+        z-index: 80;
+        min-width: 160px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(2,8,10,0.6);
+        border: 1px solid rgba(255,255,255,0.06);
+        background: linear-gradient(180deg, rgba(6,20,24,0.96), rgba(6,20,24,0.9));
+        display: none;
+      }
+      .custom-select-list.open { display: block; }
+      .custom-select-item {
+        padding: 10px 12px;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .custom-select-item:hover,
+      .custom-select-item[aria-selected="true"] { background: rgba(15,179,166,0.12); }
+
+      /* Message input should match the dark translucent container */
+      input#message {
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(6,20,24,0.06));
+        border: 1px solid var(--line);
+        color: var(--ink);
+        padding: 10px 12px;
+        border-radius: 12px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+      }
+      input#message::placeholder { color: rgba(230,246,245,0.5); font-weight:600; }
+      input#message:focus { outline: none; box-shadow: 0 0 0 4px var(--accent-soft); border-color: var(--accent); }
+
+      /* Message bubble theming */
+      .msg-self {
+        border: 1px solid rgba(15,179,166,0.18);
+        background: linear-gradient(180deg, rgba(15,179,166,0.06), rgba(6,20,24,0.14));
+        color: var(--ink);
+      }
+      .msg-other {
+        border: 1px solid rgba(255,255,255,0.04);
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(6,20,24,0.10));
+        color: rgba(230,246,245,0.9);
+      }
+      .msg-meta { color: var(--muted); }
+      .msg-body { color: rgba(230,246,245,0.92); }
+
+      /* Keep primary button styling as defined globally (warm accent) */
+
+      /* Constrain images and videos posted in the chat log so large files
+         (e.g. ai-profile.png) don't break the layout. */
+      #log img, #log video {
+        max-height: 220px;
+        max-width: none;
+        width: auto;
+        display: block;
+        object-fit: contain;
+        border-radius: 8px;
+        margin: 0;
+        align-self: flex-start;
+      }
+
+      body.chat-fullscreen {
+        display: block;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      body.chat-fullscreen main {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      body.chat-fullscreen main > header,
+      body.chat-fullscreen #roomMeta,
+      body.chat-fullscreen #sidePanel {
+        display: none;
+      }
+
+      body.chat-fullscreen #chatGrid {
+        display: block;
+      }
+
+      body.chat-fullscreen #chatContainer {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+        padding: 14px;
+        background: var(--surface);
+        z-index: 50;
+      }
+
+      body.chat-fullscreen #chatContainer .chat-content {
+        min-height: 0;
+        flex: 1 1 auto;
+      }
+
+      body.chat-fullscreen #chatContainer #log {
+        min-height: 0;
+        height: auto;
+        flex: 1 1 auto;
+      }
+
+      @media (max-width: 768px) {
+        body.chat-fullscreen #chatContainer {
+          padding-top: max(10px, env(safe-area-inset-top));
+          padding-right: max(10px, env(safe-area-inset-right));
+          padding-bottom: max(10px, env(safe-area-inset-bottom));
+          padding-left: max(10px, env(safe-area-inset-left));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="mx-auto my-1 w-full max-w-6xl px-4 pb-5">
+      <header class="flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2 shadow-sm" style="border-color:var(--line); background: linear-gradient(140deg, rgba(6,20,24,0.92) 0%, rgba(8,28,34,0.88) 100%); color:var(--ink)">
+        <div class="text-lg font-bold" style="color:var(--ink)">Quantum AES Chat Room</div>
+        <div style="color:var(--muted)"><strong style="color:var(--ink)">Active Users :</strong> <span id="active">0</span></div>
+      </header>
+
+      <div id="roomMeta" class="mt-2 mb-3 flex w-full flex-wrap items-center gap-2 text-sm ml-3" style="color:var(--muted)">
+        <span class="font-bold" style="color:var(--ink)">Room :</span>
+        <code id="roomValue" class="rounded px-1.5 py-0.5" style="background:rgba(255,255,255,0.02); color:var(--ink)"></code>
+        <span id="copyRoomIcon" role="button" tabindex="0" aria-label="Copy room id" title="Copy room id" class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full btn-outline-small">
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
+            <path d="M9 9h10v10H9z" stroke="currentColor" stroke-width="1.8" />
+            <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.8" />
+          </svg>
+        </span>
+        <span id="copyState" class="text-xs"></span>
+      </div>
+
+      <!-- Expected users input moved to client.html; room reads expected count from URL param -->
+
+      <section id="chatGrid" class="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_340px]">
+        <article id="chatContainer" class="rounded-2xl border p-4 shadow-sm" style="border-color:var(--line); background:var(--surface)">
+          <div class="chat-toolbar mb-2">
+            <h3 class="m-0 text-base font-semibold" style="color:var(--ink)">Secure Chat</h3>
+            <div style="display:flex;gap:.5rem;align-items:center">
+              <button id="fullscreenToggle" type="button" class="icon-btn btn-outline" aria-label="Maximize chat" title="Maximize chat">
+              <svg id="fullscreenIcon" viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
+                <path id="fullscreenIconPath" d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              </button>
+            </div>
+          </div>
+          <div class="chat-content">
+            <div class="mb-1 flex flex-wrap items-center gap-2">
+              <label class="min-w-20 text-sm text-[#5f6e7f]">Sender</label>
+              <strong id="senderName"></strong>
+            </div>
+
+            <div class="mb-1 flex flex-wrap items-center gap-2">
+              <label class="min-w-20 text-sm text-[#5f6e7f]">Recipient</label>
+              <div class="custom-select-container">
+                <select id="recipient" class="rounded-lg border px-2 py-1.5 theme-select" aria-hidden="true">
+                  <option value="ALL">All</option>
+                </select>
+                <button type="button" aria-haspopup="listbox" aria-expanded="false" class="custom-select-display" id="recipientDisplay">All <span class="caret">▾</span></button>
+                <ul class="custom-select-list" id="recipientList" role="listbox" tabindex="-1" aria-labelledby="recipientDisplay"></ul>
+              </div>
+            </div>
+
+            <div
+              id="log"
+              aria-live="polite"
+              class="mb-2 h-62 min-h-[18rem] resize-y overflow-auto rounded-lg border p-2"
+              style="border-color:var(--line); background: rgba(255,255,255,0.02)"
+            ></div>
+
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+              <label class="min-w-20 text-sm text-[#5f6e7f]">Session</label>
+              <span id="sessionStatus" class="inline-flex items-center rounded-full border status-pill px-3 py-1 text-sm">No key</span>
+            </div>
+
+            <div class="message-row flex flex-wrap items-center gap-2">
+              <label class="min-w-20 text-sm text-[#5f6e7f]">Message</label>
+              <button id="attachBtn" type="button" title="Attach file" class="inline-flex h-9 w-9 items-center justify-center rounded-full btn-outline">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l9.193-9.193a3 3 0 114.243 4.243l-9.193 9.193a1.5 1.5 0 01-2.121-2.121l7.19-7.19" />
+                </svg>
+              </button>
+              <input id="fileInput" type="file" class="hidden" />
+              <input id="message" placeholder="TYPE A MESSAGE" class="min-w-52 flex-1 rounded-lg border bg-white px-3 py-2 text-[#102133] outline-none ring-[#6ebcb5] focus:ring" />
+              <button id="send" disabled class="rounded-lg border px-3 py-2 text-white btn-primary disabled:cursor-not-allowed disabled:opacity-50">Send</button>
+            </div>
+          </div>
+        </article>
+
+        <aside id="sidePanel" class="rounded-2xl border p-4 shadow-sm" style="border-color:var(--line); background:var(--surface)">
+          <h3 class="mb-2 text-base font-semibold">Room Logs</h3>
+          <div id="roomLogs" class="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg border p-2 text-sm" style="border-color:var(--line); background: rgba(255,255,255,0.02)"></div>
+          <div id="bb84Panel" class="mt-3 rounded-lg border p-3 text-sm" style="border-color:var(--line); background:var(--surface)">
+            <h4 class="mb-2 font-medium">BB84 Session Statistics</h4>
+            <div class="grid grid-cols-2 gap-2 text-sm leading-tight">
+              <div>Original Bits:</div><div id="bb84_original_bits">-</div>
+              <div>Matched Bits:</div><div id="bb84_matched_bits">-</div>
+              <div>Mismatched Bits:</div><div id="bb84_mismatched_bits">-</div>
+              <div>QBER:</div><div id="bb84_qber">-</div>
+              <div>Threshold:</div><div id="bb84_threshold">11%</div>
+              <div>Session Status:</div><div id="bb84_status">-</div>
+            </div>
+            <div class="mt-3 text-xs text-[#5f6e7f]">🔢 QBER Calculation Logic: <code>qber = mismatched_bits / matched_bits</code></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/static/room.js"></script>
+  </body>
+</html>

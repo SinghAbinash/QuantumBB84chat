@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QSEC2 | Quantum Secure Rooms</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Dark theme tuned for the teal/black background image */
+        --bg: #061417; /* base page background fallback */
+        --ink: #e6f6f5; /* primary text (light) */
+        --muted: #9eb7b8; /* subdued text */
+        --surface: rgba(6,20,24,0.85); /* panels over bg image */
+        --line: rgba(255,255,255,0.06); /* subtle dividers */
+        --primary: #ff9a6b; /* warm accent to contrast teal */
+        --primary-ink: #cf7151;
+        --primary-soft: rgba(255,154,107,0.08);
+        /* teal accent to better match the background artwork */
+        --accent: #0fb3a6;
+        --accent-soft: rgba(15,179,166,0.08);
+        --warn: #ffb4a1;
+        --warn-soft: rgba(255,180,161,0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Chakra Petch", "Segoe UI", Tahoma, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(1200px 560px at -20% 0%, rgba(213,231,222,0.85) 0%, transparent 62%),
+          radial-gradient(1100px 620px at 110% -10%, rgba(220,232,245,0.75) 0%, transparent 60%),
+          url('/static/images/bg.jpg'),
+          var(--bg);
+        background-size: auto, auto, cover, auto;
+        background-position: center, center, center, 0 0;
+        background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+        display: grid;
+        place-items: center;
+        padding: 24px 14px;
+      }
+
+      .app {
+        width: min(980px, 100%);
+        background: linear-gradient(140deg, rgba(6,20,24,0.92) 0%, rgba(8,28,34,0.88) 100%);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 16px 40px rgba(2,8,10,0.6);
+        overflow: hidden;
+      }
+
+      .hero {
+        padding: 28px 24px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--primary-ink);
+        padding: 7px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--primary-soft);
+        background: var(--primary-soft);
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.45);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.45); }
+        70% { box-shadow: 0 0 0 10px rgba(15, 118, 110, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0); }
+      }
+
+      h1 {
+        margin: 12px 0 8px;
+        font-size: clamp(1.5rem, 2.7vw, 2.2rem);
+        line-height: 1.15;
+      }
+
+      .lead {
+        margin: 0;
+        color: var(--muted);
+        max-width: 62ch;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+        gap: 0;
+      }
+
+      .panel {
+        padding: 22px 24px 24px;
+      }
+
+      .panel + .panel {
+        border-left: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+      }
+
+      .group + .group {
+        margin-top: 14px;
+      }
+
+      label {
+        display: block;
+        font-size: 0.86rem;
+        color: var(--muted);
+        margin: 0 0 7px;
+      }
+
+      .field-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 10px 12px;
+        font: inherit;
+        background: rgba(255,255,255,0.03);
+        color: var(--ink);
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
+      }
+      .field-error {
+        color: var(--warn);
+        font-size: 0.85rem;
+        margin-top: 6px;
+      }
+
+      button {
+        border: 1px solid #0d655f;
+        border-radius: 11px;
+        padding: 10px 13px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        width: 100%;
+        background: var(--primary);
+        color: #fff;
+      }
+
+      .btn-secondary {
+        background: #fff;
+        color: #0f615b;
+      }
+
+      .status {
+        min-height: 40px;
+        margin-top: 12px;
+        padding: 9px 11px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+        color: var(--ink);
+        font-size: 0.9rem;
+      }
+
+      .status.warn {
+        border-color: rgba(255,180,161,0.12);
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+
+      .preview {
+        margin-top: 12px;
+        font-size: 0.86rem;
+        color: var(--muted);
+        word-break: break-all;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 4px;
+      }
+
+      .metric {
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 16px;
+        padding: 14px 12px;
+        background: linear-gradient(180deg, rgba(15,179,166,0.10), rgba(6,20,24,0.20));
+        box-shadow: 0 8px 22px rgba(2,8,10,0.48), inset 0 1px 0 rgba(255,255,255,0.02);
+      }
+
+      .metric b {
+        display: block;
+        font-size: 1.6rem;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+      }
+
+      .metric span {
+        font-size: 0.86rem;
+        color: var(--muted);
+      }
+
+      .tips {
+        margin: 14px 0 0;
+        padding-left: 17px;
+        color: var(--muted);
+      }
+
+      .tips li + li {
+        margin-top: 6px;
+      }
+
+      @media (max-width: 860px) {
+        .content {
+          grid-template-columns: 1fr;
+        }
+        .panel + .panel {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <div class="badge"><span class="dot"></span> Secure Session Gateway</div>
+        <h1>Join an encrypted room in one step</h1>
+        <p class="lead">
+          Create or reuse a room ID, pick your display name, and enter your secure messaging
+          session powered by end-to-end encryption.
+        </p>
+      </section>
+
+      <section class="content">
+        <article class="panel">
+          <div class="group">
+            <label for="room">Room ID</label>
+            <div class="field-row">
+              <input id="room" maxlength="32" placeholder="leave empty if you are initiator" />
+            </div>
+          </div>
+
+          <div class="group">
+            <label for="name">Display Name</label>
+            <input id="name" maxlength="28" placeholder="your name" />
+          </div>
+
+          <div class="group" id="expectedGroup">
+            <label for="expected">Total Users</label>
+            <input id="expectedUsers" type="number" min="2" step="1" placeholder="e.g. 3" />
+            <div style="font-size:0.85rem;color:var(--muted);margin-top:6px">number of clients can join the meeting</div>
+          </div>
+
+          <div class="group">
+              <button id="join" type="button" class="btn-primary">Join Room</button>
+              <div id="status" class="status">Ready. Enter details to continue.</div>
+              <div class="preview">Join URL: <span id="previewUrl">-</span></div>
+            </div>
+
+          <!-- Quantum/BB84 options removed; simplified join flow -->
+        </article>
+
+        <aside class="panel">
+          <h3 style="margin: 0 0 10px">Session Snapshot</h3>
+          <div class="metric-grid">
+            <div class="metric">
+              <b id="roomLen">0</b>
+              <span>Room ID chars</span>
+            </div>
+            <div class="metric">
+              <b id="nameLen">0</b>
+              <span>Name chars</span>
+            </div>
+          </div>
+          <ul class="tips">
+            <li>Use a custom room ID to share repeatable links with teammates.</li>
+            <li>Random IDs reduce collisions in ad-hoc rooms.</li>
+            <li>Leave display name empty to join as <code>guest</code>.</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      function makeRandomRoom() {
+        return Math.random().toString(36).slice(2, 9);
+      }
+
+      function sanitizeRoom(room) {
+        return room.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
+      }
+
+      const roomEl = document.getElementById("room");
+      // Encryption options can be configured by loading helper scripts if present.
+      const nameEl = document.getElementById("name");
+      const statusEl = document.getElementById("status");
+      const previewUrlEl = document.getElementById("previewUrl");
+      const roomLenEl = document.getElementById("roomLen");
+      const nameLenEl = document.getElementById("nameLen");
+
+      function computeRoom() {
+        const raw = roomEl.value.trim();
+        return sanitizeRoom(raw) || makeRandomRoom();
+      }
+
+      function computeName() {
+        return nameEl.value.trim() || "guest";
+      }
+
+      function updateUi() {
+        const roomRaw = roomEl.value.trim();
+        const roomClean = sanitizeRoom(roomRaw);
+        const name = nameEl.value.trim();
+        roomLenEl.textContent = String(roomClean.length);
+        nameLenEl.textContent = String(name.length);
+
+        const room = roomClean || "random-at-join";
+        const user = name || "guest";
+        // show/hide expected users input: visible only when room input is empty
+        const expectedGroup = document.getElementById('expectedGroup');
+        const rawRoom = roomEl.value.trim();
+        const expectedEl = document.getElementById('expectedUsers');
+        if (expectedGroup) { expectedGroup.style.display = rawRoom ? 'none' : ''; }
+
+        // include expected users in preview only when visible
+        const expVal = (!rawRoom) ? (expectedEl||{}).value || '' : '';
+        const expQuery = expVal ? `&expected=${encodeURIComponent(expVal)}` : '';
+        previewUrlEl.textContent = `/room/${encodeURIComponent(room)}?username=${encodeURIComponent(user)}${expQuery}`;
+        // If room id was cleaned, inform the user; otherwise ready
+        if (roomRaw && roomRaw !== roomClean) {
+          statusEl.textContent = "Room ID cleaned: only letters, numbers, _ and - are allowed.";
+          statusEl.classList.add("warn");
+        } else {
+          statusEl.textContent = "Ready. Enter details to continue.";
+          statusEl.classList.remove("warn");
+        }
+      }
+
+      // Random button removed from UI; room will be auto-generated on join if left empty.
+
+      // Quantum UI removed; simplified flow.
+
+      roomEl.addEventListener("input", updateUi);
+      nameEl.addEventListener("input", updateUi);
+
+      // Form validation helpers (use existing status element for inline feedback)
+      const joinBtn = document.getElementById('join');
+
+      function validateRoomId(value) {
+        if (!value) return true; // empty means generate random at join
+        return /^[A-Za-z0-9_-]{1,32}$/.test(value);
+      }
+
+      function validateExpected(value) {
+        if (!value) return false;
+        const n = parseInt(value, 10);
+        return !Number.isNaN(n) && n >= 2;
+      }
+
+      function validateForm() {
+        const rawRoom = roomEl.value.trim();
+        const roomValid = validateRoomId(rawRoom);
+        // clear previous field errors
+        clearFieldError(roomEl);
+        clearFieldError(expectedInput);
+        clearFieldError(nameEl);
+        if (!roomValid) {
+          const msg = 'Room ID may only contain letters, numbers, _ and - (max 32 chars).';
+          statusEl.textContent = msg;
+          statusEl.classList.add('warn');
+          showFieldError(roomEl, msg);
+          roomEl.focus();
+          joinBtn.disabled = true;
+          return false;
+        }
+        if (!rawRoom) {
+          // creating a new room — expectedUsers must be present and valid
+          const expVal = (document.getElementById('expectedUsers')||{}).value || '';
+          if (!validateExpected(expVal)) {
+            const msg = 'When creating a new room, please specify the expected number of users (2 or more).';
+              // do not write this validation message into the status tip — show only as a field error
+              showFieldError(expectedInput, msg);
+              expectedInput && expectedInput.focus();
+              joinBtn.disabled = true;
+              return false;
+          }
+        }
+        // name length check (optional)
+        const nm = nameEl.value.trim();
+        if (nm.length > 28) {
+          const msg = 'Display name must be 28 characters or fewer.';
+          statusEl.textContent = msg;
+          statusEl.classList.add('warn');
+          showFieldError(nameEl, msg);
+          nameEl.focus();
+          joinBtn.disabled = true;
+          return false;
+        }
+        statusEl.textContent = 'Ready. Enter details to continue.';
+        statusEl.classList.remove('warn');
+        joinBtn.disabled = false;
+        return true;
+      }
+
+      // Validate on demand: keep UI updates via `updateUi`; run full validation on Join click only
+      const expectedInput = document.getElementById('expectedUsers');
+
+      function showFieldError(el, msg) {
+        if (!el) return;
+        // remove any existing error for this field anywhere in DOM
+        clearFieldError(el);
+        const sp = document.createElement('div');
+        sp.className = 'field-error';
+        sp.setAttribute('data-field-error', '1');
+        if (el.id) sp.setAttribute('data-field-for', el.id);
+        sp.textContent = msg;
+        // prefer appending to the nearest .field-row or the element's parent
+        let container = el.closest('.field-row') || el.parentNode;
+        container && container.appendChild(sp);
+      }
+
+      function clearFieldError(el) {
+        if (!el) return;
+        const id = el.id || '';
+        const selector = id ? `[data-field-error][data-field-for="${id}"]` : '[data-field-error]';
+        const matches = Array.from(document.querySelectorAll(selector));
+        for (const m of matches) m.remove();
+      }
+
+      // Click handler for Join
+      joinBtn.addEventListener('click', () => {
+        if (!validateForm()) return;
+        const rawRoom = roomEl.value.trim();
+        const expectedEl = document.getElementById('expectedUsers');
+        const room = computeRoom();
+        const name = computeName();
+        const exp = (!rawRoom) ? ((expectedEl||{}).value || '') : '';
+        const expQuery = exp ? `&expected=${encodeURIComponent(exp)}` : '';
+        const target = `/room/${encodeURIComponent(room)}?username=${encodeURIComponent(name)}${expQuery}`;
+        window.location.href = target;
+      });
+
+      roomEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("join").click();
+      });
+      nameEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("join").click();
+      });
+
+      updateUi();
+    </script>
+  </body>
+</html>
